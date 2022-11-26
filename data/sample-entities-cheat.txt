@@ -1,0 +1,10 @@
+Adobe	https://en.wikipedia.org/wiki/Adobe_Inc.
+Albany	https://en.wikipedia.org/wiki/Albany,_New_York
+Alzheimer	https://en.wikipedia.org/wiki/Alzheimer%27s_disease
+Amazon	https://en.wikipedia.org/wiki/Amazon_(company)
+Angelina Jolie	https://en.wikipedia.org/wiki/Angelina_Jolie
+Barack Obama	https://en.wikipedia.org/wiki/Barack_Obama
+Barnes and Noble	https://en.wikipedia.org/wiki/Barnes_%26_Noble
+Berlin	https://en.wikipedia.org/wiki/Berlin
+BioWare	https://en.wikipedia.org/wiki/BioWare
+Blizzard	https://en.wikipedia.org/wiki/Blizzard_Entertainment

@@ -1,0 +1,3 @@
+is a	https://en.wikipedia.org/wiki/Adobe_Inc.	https://en.wikipedia.org/wiki/Public_company	https://www.wikidata.org/wiki/Property:P31
+capital of	https://en.wikipedia.org/wiki/Berlin	https://en.wikipedia.org/wiki/Germany	https://www.wikidata.org/wiki/Property:P1376
+founded by	https://en.wikipedia.org/wiki/Blizzard_Entertainment	https://en.wikipedia.org/wiki/Michael_Morhaime	https://www.wikidata.org/wiki/Property:P112
