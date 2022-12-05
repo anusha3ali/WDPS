@@ -65,7 +65,6 @@ def _join_sentences(sentences):
     return '. '.join(sentences)
 
 
-# wordvec processing sparql https://ner.pythonhumanities.com/03_06_loading_custom_word_vectors.html
 def _valid_word(word: str) -> bool:
     return word not in STOPWORDS and len(word) > 0 and \
            not (re.match(r'[^a-zA-Z\d$€:.-]', word) or (len(word) == 1 and re.match(r'[^a-zA-Z\d]', word)))
@@ -148,10 +147,10 @@ def process_warc_zip(file_name):
         os.makedirs(res_directory)
 
     with gzip.open("data/warcs/sample.warc.gz", 'rt', errors='ignore') as fo:
-        # pool_size = mp.cpu_count()
+        pool_size = mp.cpu_count()
 
         # Force single threaded behaviour for debugging.
-        pool_size = 1
+        # pool_size = 1
         with mp.Pool(processes=pool_size) as pool:
             processed_files = pool.map(process_payload, split_records(fo))
 
@@ -161,21 +160,7 @@ def process_warc_zip(file_name):
         print(f"{os.getcwd()}/{file.name}")
 
 
-def jaccard_similarity(list1, list2):
-    s1 = set(list1)
-    s2 = set(list2)
-    return float(len(s1.intersection(s2)) / len(s1.union(s2)))
-
-
-def similarity(spacy_entity1, spacy_entity2):
-    ent1 = set(map(str, spacy_entity1))
-    ent2 = set(map(str, spacy_entity2))
-    sim = len(ent1 & ent2) / len(ent1 | ent2)
-    return sim
-
-
 if __name__ == "__main__":
-    # s = BeautifulSoup("<div>Text <p>more</p> tr</div>").find_all(['div', 'p'])
     parser = argparse.ArgumentParser("wdp")
     parser.add_argument(
         "--warc_output",
