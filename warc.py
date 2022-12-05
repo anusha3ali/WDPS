@@ -6,9 +6,14 @@ import csv
 import datetime
 from html import unescape
 import os
+import re
 
 import nltk
 from bs4 import BeautifulSoup
+
+nltk.download('stopwords')
+
+STOPWORDS = set(nltk.corpus.stopwords.words("english"))
 
 
 def find_entities(payload: str) -> (str, [str]):
@@ -56,16 +61,82 @@ def split_records(stream):
     yield payload
 
 
+def _join_sentences(sentences):
+    return '. '.join(sentences)
+
+
+# wordvec processing sparql https://ner.pythonhumanities.com/03_06_loading_custom_word_vectors.html
+def _valid_word(word: str) -> bool:
+    return word not in STOPWORDS and len(word) > 0 and \
+           not (re.match(r'[^a-zA-Z\d$€:.-]', word) or (len(word) == 1 and re.match(r'[^a-zA-Z\d]', word)))
+
+
+def _sanitize_word(word: str) -> str:
+    if len(word) == 0:
+        return word
+    if word[-1] == '.':
+        if not word[-2].isalnum():
+            return word[:-2] + '.'
+    elif not word[-1].isalnum():
+        return word[:-1]
+    return word
+
+
+def _process_text(text: str) -> str:
+    filtered_words = [_sanitize_word(word) for word in text.split(' ') if _valid_word(word)]
+
+    tokenized_text = nltk.tokenize.sent_tokenize(" ".join(filtered_words))
+
+    return " ".join(tokenized_text)
+
+
+def _get_soup_text(html_soup):
+    flag = 1
+    if flag == 1:
+        text_tags = [text_tag.text for text_tag in html_soup.find_all(re.compile('^h[1-6]$')) + html_soup.find_all('p') if text_tag.text is not None]
+        return _join_sentences(text_tags)
+    else:
+        return html_soup.get_text()
+
+
 def process_payload(warc_file):
     file_key, html_file = find_entities(warc_file)
     if file_key is not None:
         normalized_html = unicodedata.normalize("NFKC", unescape(" ".join(html_file)))
+
         html_soup = BeautifulSoup(normalized_html, "html.parser")
-        text = html_soup.get_text()
-        tokenized_text = nltk.tokenize.word_tokenize(text)
-        # Tokenize doesn't do anything right now (except for removing whitespace). TODO define proper behaviour
-        return file_key, " ".join(tokenized_text)
-    return None, None
+
+        title = html_soup.title
+        title_text = ""
+        if title is not None and title.string is not None:
+            title_text = title.string
+
+        headers = [header.text for header in html_soup.find_all(re.compile('^h[1-6]$'))]
+        headers_text = _join_sentences(headers)
+
+        all_text = _get_soup_text(html_soup)
+
+        processed_title = _process_text(title_text)
+        processed_headers = _process_text(headers_text)
+        processed_all_text = _process_text(all_text)
+
+        title_sentence = processed_title
+        if len(title_sentence) > 0 and title_sentence[-1] != '.':
+            title_sentence += '. '
+        else:
+            title_sentence += ' '
+
+        return file_key, processed_title, processed_headers, (title_sentence + processed_all_text).strip()
+    return None, None, None, None
+
+
+def _valid_row(row):
+    if len(row) < 4:
+        return False
+
+    if row[0] is not None and row[3] is not None and len(row[3]) > 0:
+        return True
+    return False
 
 
 def process_warc_zip(file_name):
@@ -77,20 +148,34 @@ def process_warc_zip(file_name):
         os.makedirs(res_directory)
 
     with gzip.open("data/warcs/sample.warc.gz", 'rt', errors='ignore') as fo:
-        pool_size = mp.cpu_count()
+        # pool_size = mp.cpu_count()
 
         # Force single threaded behaviour for debugging.
-        # pool_size = 1
+        pool_size = 1
         with mp.Pool(processes=pool_size) as pool:
             processed_files = pool.map(process_payload, split_records(fo))
 
     with open(f"{res_directory}/{file_name}.csv", 'w', newline='', encoding='UTF-8') as file:
-        writer = csv.writer(file)
-        writer.writerows([[key, val] for key, val in processed_files if key is not None])
+        writer = csv.writer(file, quoting=csv.QUOTE_NONE, escapechar='\\')
+        writer.writerows([row for row in processed_files if _valid_row(row)])
         print(f"{os.getcwd()}/{file.name}")
 
 
+def jaccard_similarity(list1, list2):
+    s1 = set(list1)
+    s2 = set(list2)
+    return float(len(s1.intersection(s2)) / len(s1.union(s2)))
+
+
+def similarity(spacy_entity1, spacy_entity2):
+    ent1 = set(map(str, spacy_entity1))
+    ent2 = set(map(str, spacy_entity2))
+    sim = len(ent1 & ent2) / len(ent1 | ent2)
+    return sim
+
+
 if __name__ == "__main__":
+    # s = BeautifulSoup("<div>Text <p>more</p> tr</div>").find_all(['div', 'p'])
     parser = argparse.ArgumentParser("wdp")
     parser.add_argument(
         "--warc_output",
