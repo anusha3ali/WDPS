@@ -11,10 +11,6 @@ import re
 import nltk
 from bs4 import BeautifulSoup
 
-nltk.download('stopwords')
-
-STOPWORDS = set(nltk.corpus.stopwords.words("english"))
-
 
 def find_entities(payload: str) -> (str, [str]):
     if payload == '':
@@ -66,8 +62,8 @@ def _join_sentences(sentences):
 
 
 def _valid_word(word: str) -> bool:
-    return word not in STOPWORDS and len(word) > 0 and \
-           not (re.match(r'[^a-zA-Z\d$€:.-]', word) or (len(word) == 1 and re.match(r'[^a-zA-Z\d]', word)))
+    return len(word) > 0 and \
+           not (re.match(r'[^a-zA-Z\d$€:.,-]', word) or (len(word) == 1 and re.match(r'[^a-zA-Z\d]', word)))
 
 
 def _sanitize_word(word: str) -> str:
@@ -151,8 +147,11 @@ def process_warc_zip(file_name):
 
         # Force single threaded behaviour for debugging.
         # pool_size = 1
-        with mp.Pool(processes=pool_size) as pool:
-            processed_files = pool.map(process_payload, split_records(fo))
+        if pool_size > 1:
+            with mp.Pool(processes=pool_size) as pool:
+                processed_files = pool.map(process_payload, split_records(fo))
+        else:
+            processed_files = [process_payload(payload) for payload in split_records(fo)]
 
     with open(f"{res_directory}/{file_name}.csv", 'w', newline='', encoding='UTF-8') as file:
         writer = csv.writer(file, quoting=csv.QUOTE_NONE, escapechar='\\')
