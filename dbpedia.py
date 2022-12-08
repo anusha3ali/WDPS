@@ -14,32 +14,13 @@ language = "Language"
 norp = ["EthnicGroup", "PoliticalParty"] # low coverage
 fac = ['Infrastructure', 'Airport', "Building", 'Bridge', "Highway"] # low coverage
 
-
-# DATE - Absolute or relative dates or periods
-# PERSON - People, including fictional
-# GPE - Countries, cities, states
-# LOC - Non-GPE locations, mountain ranges, bodies of water
-# MONEY - Monetary values, including unit
-# TIME - Times smaller than a day
-# PRODUCT - Objects, vehicles, foods, etc. (not services)
-# CARDINAL - Numerals that do not fall under another type
-# ORDINAL - "first", "second", etc.
-# QUANTITY - Measurements, as of weight or distance
-# EVENT - Named hurricanes, battles, wars, sports events, etc.
-# FAC - Buildings, airports, highways, bridges, etc.
-# LANGUAGE - Any named language
-# LAW - Named documents made into laws.
-# NORP - Nationalities or religious or political groups
-# PERCENT - Percentage, including "%"
-# WORK_OF_ART - Titles of books, songs, etc.
-
-groups = {
+groups_dict = {
     "Person"        : ["Person"],
-    "GPE"           : ["Location"],
+    "GPE"           : ["Location", "Place", "Country", "SpatialThing", "Geo"], #? Yago:GeoEntity/Region or geo:SpatialThing (this for all spatial things)
     "LOC"           : ["Location"],
     "PRODUCT"       : ["Work", "Organisation"],
     "EVENT"         : ["Event"],
-    "FAC"           : ["Infrastructure", "Airport", "Bridge", "Highway", "Building"], #?
+    "FAC"           : ["Infrastructure", "Airport", "Bridge", "Highway", "Building"], #? geo:SpatialThing
     "LANGUAGE"      : ["Language"],
     "NORP"          : ["EthincGroup", "PoliticalParty", "Country"], #?
     "WORK_OF_ART"   : ["Work"],
@@ -50,20 +31,21 @@ groups = {
     "CARDINAL"      : [], #?
     "ORDINAL"       : [], #?
     "PERCENT"       : [] #?
-,}
+}
 
-
-
-groups = ["Person", "Place", "Organisation", "Work", "Event", "Language"]
+groups = ["dbo:Person", "geo:SpatialThing", "dbo:Organisation", "dbo:Work", "dbo:Event", "dbo:Language"]
 
 def dbpedia_format(mention):
-    mention_1 = mention.title().strip()
+    mention = mention.title().strip()
+    mention_1 = ' '.join((mention.split()))
     mention_2 = mention_1.replace(' ', '_')
     return mention_1, mention_2
 
 
 def build_query(mention, group):
     mention_1, mention_2 = dbpedia_format(mention)
+    print(f"({mention_1}) & ({mention_2})")
+    print(group)
     return f"""
         PREFIX owl:     <http://www.w3.org/2002/07/owl#>
         PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
@@ -77,37 +59,44 @@ def build_query(mention, group):
         PREFIX skos:    <http://www.w3.org/2004/02/skos/core#>
         PREFIX dbo:     <http://dbpedia.org/ontology/>
 
-        SELECT DISTINCT ?item ?page ?group WHERE {{
-        # [Case 1] no disambiguation at all (eg. Twitter)
+
+        SELECT DISTINCT ?item ?name ?page WHERE {{
+            # VALUES ?groups {{dbo:Person dbo:Location}}
+
         {{
+            # [Case 1] no disambiguation at all (eg. Twitter)
             ?item rdfs:label "{mention_1}"@en .
         }}
-        # UNION
-        # {{
-        #     ?item rdf:type dbo:{group} .
-        #     ?item rdfs:label ?temp .
-        #     FILTER (CONTAINS (?temp, "{mention_1}"))
-        # }}
         UNION
-        # [Case 2] a dedicated disambiguation page (eg. Michael Jordan)
         {{
+            # [Case 1] lands in a redirect page (eg. "Google, Inc." -> "Google")
+            ?temp rdfs:label "{mention_1}"@en .
+            ?temp dbo:wikiPageRedirects ? ?item .   
+        }}
+        UNION
+        {{
+            # [Case 2] a dedicated disambiguation page (eg. Michael Jordan)
             <http://dbpedia.org/resource/{mention_2}_(disambiguation)> dbo:wikiPageDisambiguates ?item.
         }}
         UNION
-        # [Case 3] disambiguation list within entity page (eg. New York)
         {{
-            dbr:{mention_2} dbo:wikiPageDisambiguates ?item .
+            # [Case 3] disambiguation list within entity page (eg. New York)
+            <http://dbpedia.org/resource/{mention_2}> dbo:wikiPageDisambiguates ?item .
         }}
 
         # Filter by entity class
-        ?item rdf:type dbo:{group} .
+        ?item rdf:type {group} .
+
+        # Grab wikipedia link
+        ?item foaf:isPrimaryTopicOf ?page .
+
+        # Get name
+        ?item rdfs:label ?name .
+        FILTER (langMatches(lang(?name),"en"))
 
         # ?item rdf:type ?group .
         # ?group rdfs:label ?group_name
         # FILTER (STR(?group_name) IN ("Building", "Airport"))
-
-        # Grab wikipedia link
-        ?item foaf:isPrimaryTopicOf ?page .
     }}
     """
 
