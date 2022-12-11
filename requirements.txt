@@ -3,3 +3,5 @@ nltk==3.7
 SPARQLWrapper==2.0.0
 spacy==3.4.3
 gensim==4.2.0
+networkx==2.8.8
+requests==2.28.1
