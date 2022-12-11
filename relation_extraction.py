@@ -64,6 +64,7 @@ class Reverb(RelationExtractor):
         spans = spacy.util.filter_spans(spans)
         return spans
 
+    # TODO shouldnt this be extract_relations and not ..._relation to override the superclass.
     def extract_relation(self, sentence):
         relations = []
         ss = sentence.start
@@ -223,6 +224,7 @@ class Patty(RelationExtractor):
         return relations
 
 
-patty = Patty()
-rows = patty.extract_relations_from_zip(f"{pre_proc_directory}/warcs-20221210-141217.csv", with_matcher=True)
-patty.save_file(f"{res_directory}/{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}", rows)
+if __name__ == "__main__":
+    patty = Patty()
+    rows = patty.extract_relations_from_zip(f"{pre_proc_directory}/warcs-20221210-141217.csv", with_matcher=True)
+    patty.save_file(f"{res_directory}/{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}", rows)
