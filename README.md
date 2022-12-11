@@ -21,6 +21,6 @@ docker cp CONTAINER_NAME:PATH/TO/SRC PATH/TO/DEST
 
 # Spacy model
 Download Spacy model using:
-```
+```console
 python -m spacy download en_core_web_trf
 ```
