@@ -1,14 +1,14 @@
 import spacy
-import spacy_transformers
-from spacy.pipeline import merge_entities
+# import spacy_transformers
+# from spacy.pipeline import merge_entities
 from spacy.matcher import Matcher
-from spacy.tokens import Span
-import stanza
-import spacy_stanza
+# from spacy.tokens import Span
+# import stanza
+# import spacy_stanza
 import networkx as nx
 from itertools import combinations
-import pandas as pd
-import numpy as np
+# import pandas as pd
+# import numpy as np
 import csv
 import datetime
 
@@ -16,11 +16,11 @@ pre_proc_directory  = 'pre-proc'
 res_directory       = "relations"
 
 
-class RelationExtractor():
+class RelationExtractor:
     def __init__(self, nlp):
         self.nlp = nlp
 
-    def extract_relations(self, setnence, **kwargs):
+    def extract_relations(self, sentence, *args, **kwargs):
         pass
 
     def extract_relations_from_zip(self, filename, *args, **kwargs):
@@ -38,8 +38,9 @@ class RelationExtractor():
 
     def save_file(self, filename, rows):
         with open(f"{res_directory}/{filename}.csv", 'w', newline='', encoding='UTF-8') as file:
-                writer = csv.writer(file)
-                writer.writerows([row for row in rows])
+            writer = csv.writer(file)
+            writer.writerows([row for row in rows])
+
 
 class Reverb(RelationExtractor):
     def __init__(self):
@@ -116,23 +117,22 @@ class Patty(RelationExtractor):
         print(with_matcher)
         if with_matcher:
             pattern = [
-            [
-                {"POS": "VERB"},
-                {"POS": "PART", "OP": "?"},
-                {"POS": "ADV",  "OP": "?"},
-                {"POS": {"IN": ["ADJ", "ADV", "PRON", "DET"]}, "OP": "*"},
-                {"POS": {"IN": ["PART", "ADP"]}, "OP": "?"}    
-            ],
-            [
-                {"POS": "NOUN"},
-                {"DEP": "prep"}    
-            ]
+                [
+                    {"POS": "VERB"},
+                    {"POS": "PART", "OP": "?"},
+                    {"POS": "ADV",  "OP": "?"},
+                    {"POS": {"IN": ["ADJ", "ADV", "PRON", "DET"]}, "OP": "*"},
+                    {"POS": {"IN": ["PART", "ADP"]}, "OP": "?"}
+                ],
+                [
+                    {"POS": "NOUN"},
+                    {"DEP": "prep"}
+                ]
             ]
             matcher = Matcher(self.nlp.vocab)
             matcher.add("pattern", pattern)
             return self.extract_relations_with_matcher(sentence, matcher)
         return self.extract_relations_without_matcher(sentence)
-
 
     def extract_relations_without_matcher(self, sentence):
         no_pos = {"AUX"}
@@ -163,9 +163,10 @@ class Patty(RelationExtractor):
                 continue
             
             # Remove invalid tokens (auxilary, named entity, certain types of nouns)
-            path = [t for t in path if t.pos_ not in no_pos 
-                                    and not t.ent_type 
-                                    and not (t.pos_ == "NOUN" and t.dep_ in no_dep)]
+            path = [t for t in path
+                    if t.pos_ not in no_pos
+                    and not t.ent_type
+                    and not (t.pos_ == "NOUN" and t.dep_ in no_dep)]
             if not len(path):
                 continue
             
@@ -176,7 +177,6 @@ class Patty(RelationExtractor):
 
             relations.append((e1, ' '.join([t.text for t in path]).lower(), e2))
         return relations
-
 
     def extract_relations_with_matcher(self, sentence, matcher):
         relations = []

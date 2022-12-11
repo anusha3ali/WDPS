@@ -7,34 +7,35 @@ sparql.setReturnFormat(JSON)
 place = 'Place'
 person = 'Person'
 org = 'Organisation'
-product = 'Work' # Organisation,,,?
+product = 'Work'  # Organisation,,,?
 work = 'Work'
 event = 'Event'
 language = "Language"
 
-norp = ["EthnicGroup", "PoliticalParty"] # low coverage
-fac = ['Infrastructure', 'Airport', "Building", 'Bridge', "Highway"] # low coverage
+norp = ["EthnicGroup", "PoliticalParty"]  # low coverage
+fac = ['Infrastructure', 'Airport', "Building", 'Bridge', "Highway"]  # low coverage
 
 groups_dict = {
     "Person"        : ["Person"],
-    "GPE"           : ["Location", "Place", "Country", "SpatialThing", "Geo"], #? Yago:GeoEntity/Region or geo:SpatialThing (this for all spatial things)
+    "GPE"           : ["Location", "Place", "Country", "SpatialThing", "Geo"],  # ? Yago:GeoEntity/Region or geo:SpatialThing (this for all spatial things)
     "LOC"           : ["Location"],
     "PRODUCT"       : ["Work", "Organisation"],
     "EVENT"         : ["Event"],
-    "FAC"           : ["Infrastructure", "Airport", "Bridge", "Highway", "Building"], #? geo:SpatialThing
+    "FAC"           : ["Infrastructure", "Airport", "Bridge", "Highway", "Building"],  # ? geo:SpatialThing
     "LANGUAGE"      : ["Language"],
-    "NORP"          : ["EthincGroup", "PoliticalParty", "Country"], #?
+    "NORP"          : ["EthincGroup", "PoliticalParty", "Country"],  # ?
     "WORK_OF_ART"   : ["Work"],
     "LAW"           : [],
-    "MONEY"         : ["Currency"], #?
-    "DATE"          : ["Year", "Month", "Day", "Time"], #?
-    "TIME"          : ["Time"], #?
-    "CARDINAL"      : [], #?
-    "ORDINAL"       : [], #?
-    "PERCENT"       : [] #?
+    "MONEY"         : ["Currency"],  # ?
+    "DATE"          : ["Year", "Month", "Day", "Time"],  # ?
+    "TIME"          : ["Time"],  # ?
+    "CARDINAL"      : [],  # ?
+    "ORDINAL"       : [],  # ?
+    "PERCENT"       : []  # ?
 }
 
 groups = ["dbo:Person", "geo:SpatialThing", "dbo:Organisation", "dbo:Work", "dbo:Event", "dbo:Language"]
+
 
 def dbpedia_format(mention):
     mention = mention.title().strip()
@@ -103,16 +104,18 @@ def generate_candidates(mention, group):
         print(result)
     return results
 
+
 def get_most_popular(results):
-    backlinks=0
-    popular_page=None
-    S = requests.Session()
-    URL = "https://en.wikipedia.org/w/api.php"
+    max_backlinks_len = 0
+    popular_page = None
+    session = requests.Session()
+    url = "https://en.wikipedia.org/w/api.php"
+
     for result in results["results"]["bindings"]:
-        name=result["page"]
-        x=name["value"].split("/")
-        name=x[-1]
-        PARAMS = {
+        name = result["page"]
+        x = name["value"].split("/")
+        name = x[-1]
+        params = {
             "action": "query",
             "format": "json",
             "list": "backlinks",
@@ -121,27 +124,26 @@ def get_most_popular(results):
 
         }
 
-        R = S.get(url=URL, params=PARAMS)
-        DATA = R.json()
-        BACKLINKS = DATA["query"]["backlinks"]
-        l=len(BACKLINKS)
-        print (name, l)
-        if l>backlinks:
-            backlinks=l
-            popular_page=result
-    print ("max_popularity",popular_page )
+        response = session.get(url=url, params=params)
+        json_data = response.json()
+        backlinks = json_data["query"]["backlinks"]
+        backlinks_len = len(backlinks)
+        print(name, backlinks_len)
 
-
+        if backlinks_len > max_backlinks_len:
+            max_backlinks_len = backlinks_len
+            popular_page = result
+    print("max_popularity", popular_page)
 
 
 def main():
-       mention = input("mention: ")
-       group_num = int(input(' [1] Person\n [2] Place\n [3] Org\n [4] Product\n [5] Event\n [6] Language\ngroup: '))
-       group = groups[group_num-1]
-       results=generate_candidates(mention,group)
-       get_most_popular(results)
-       print()
+    mention = input("mention: ")
+    group_num = int(input(' [1] Person\n [2] Place\n [3] Org\n [4] Product\n [5] Event\n [6] Language\ngroup: '))
+    group = groups[group_num-1]
+    results = generate_candidates(mention, group)
+    get_most_popular(results)
+    print()
+
 
 if __name__ == "__main__":
     main()
-
