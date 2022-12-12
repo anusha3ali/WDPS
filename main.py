@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
     create_dirs(args.pre_proc_dir, args.relations_dir)
 
-    if not args.skip_pre_proc and False:
+    if not args.skip_pre_proc:
         pre_proc_files = pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
     else:
         # TODO shouldn't hard code this.
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     # tags disabled in relation extraction disable=["textcat"]
     nlp_model = spacy.load("en_core_web_trf", disable=["textcat"])
 
-    if not args.skip_entity_linking and False:
+    if not args.skip_entity_linking:
         linked_entities, entity_to_url = entity_linking_stage(nlp_model, pre_proc_files)
     else:
         linked_entities, entity_to_url = [], {}
