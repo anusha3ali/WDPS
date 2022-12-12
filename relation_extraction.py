@@ -2,7 +2,7 @@ import spacy
 # import spacy_transformers
 # from spacy.pipeline import merge_entities
 from spacy.matcher import Matcher
-# from spacy.tokens import Span
+from spacy.tokens import Span
 # import stanza
 # import spacy_stanza
 import networkx as nx
@@ -181,7 +181,7 @@ class Patty(RelationExtractor):
 
     def extract_relations_with_matcher(self, sentence, matcher):
         relations = []
-        ss = sentence.satart
+        ss = sentence.start
         ents = sentence.ents
 
         # Create pairs of entities

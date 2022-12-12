@@ -239,30 +239,29 @@ def process_warc_zip() -> List[Tuple[str, str, str, str]]:
         else:
             processed_files = [process_payload(payload) for payload in split_records(fo)]
 
-        return processed_files
+        return [row for row in processed_files if _valid_row(row)]
 
 
 def save_pre_proc(
-        processed_files: List[Union[Tuple[str, str, str, str], Tuple[None, None, None, None]]],
+        pre_proc_dir: str,
+        processed_files: List[Tuple[str, str, str, str]],
         filename: str
 ):
     """Store the processed files as CSV in folder /pre-proc/ under the name of filename.
 
+    :param pre_proc_dir: Directory to store the preprocessed file in.
+    :type pre_proc_dir: str
     :param processed_files: Rows to store containing WARC-TREC-ID, HTML title, HTML headers, and HTML text tags.
     :type processed_files: List[Tuple[str, str, str, str]]
     :param filename: Filename of csv to store processed files in.
     :type filename: str
     """
-    res_directory = "pre-proc"
-    # Create pre-proc directory.
-    if not os.path.exists(res_directory):
-        os.makedirs(res_directory)
 
-    with open(f"{res_directory}/{filename}.csv", 'w', newline='', encoding='UTF-8') as file:
+    with open(f"{pre_proc_dir}/{filename}.csv", 'w', newline='', encoding='UTF-8') as file:
         writer = csv.writer(file, quoting=csv.QUOTE_NONE, escapechar='\\')
 
         # Write rows if the row is valid.
-        writer.writerows([row for row in processed_files if _valid_row(row)])
+        writer.writerows(processed_files)
 
         # Print complete path to pre processed CSV file.
         print(f"{os.getcwd()}/{file.name}")
