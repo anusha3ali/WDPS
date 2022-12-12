@@ -1,3 +1,5 @@
+import ssl
+
 import nltk
 from nltk import word_tokenize, pos_tag
 import pandas as pd
@@ -6,6 +8,8 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 import requests
 
 from nltk import Tree
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 df = pd.read_csv("innovators.csv")
 

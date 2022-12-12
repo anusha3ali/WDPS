@@ -1,5 +1,9 @@
+import ssl
+
 from SPARQLWrapper import SPARQLWrapper, JSON
 import requests
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 sparql = SPARQLWrapper("http://dbpedia.org/sparql")
 sparql.setReturnFormat(JSON)
@@ -134,6 +138,9 @@ def get_most_popular(results):
             max_backlinks_len = backlinks_len
             popular_page = result
     print("max_popularity", popular_page)
+    if popular_page is None:
+        return None
+    return popular_page["page"]["value"]
 
 
 def main():

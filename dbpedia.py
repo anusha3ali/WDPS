@@ -1,4 +1,8 @@
+import ssl
+
 from SPARQLWrapper import SPARQLWrapper, JSON
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 sparql = SPARQLWrapper("http://dbpedia.org/sparql")
 sparql.setReturnFormat(JSON)

@@ -25,7 +25,7 @@ class RelationExtractor:
 
     def extract_relations_from_zip(self, filename, *args, **kwargs):
         rows = []
-        with open(filename, newline='') as file:
+        with open(filename, newline='', encoding='UTF-8') as file:
             csv_reader = csv.reader(file, quoting=csv.QUOTE_NONE, escapechar='\\')
             for row in csv_reader:
                 document = self.nlp(row[-1])
@@ -43,8 +43,9 @@ class RelationExtractor:
 
 
 class Reverb(RelationExtractor):
-    def __init__(self):
-        nlp = spacy.load("en_core_web_trf", disable=["textcat"])
+    def __init__(self, nlp=None):
+        if nlp is None:
+            nlp = spacy.load("en_core_web_trf", disable=["textcat"])
         super().__init__(nlp)
         self.pattern = [[
             {"POS": "VERB"},
@@ -101,8 +102,9 @@ class Reverb(RelationExtractor):
 
 
 class Patty(RelationExtractor):
-    def __init__(self):
-        nlp = spacy.load("en_core_web_trf", disable=["textcat"])
+    def __init__(self, nlp=None):
+        if nlp is None:
+            nlp = spacy.load("en_core_web_trf", disable=["textcat"])
         nlp.add_pipe("merge_entities")
         super().__init__(nlp)
 
