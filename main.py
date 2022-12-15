@@ -4,23 +4,26 @@ import datetime
 import os
 
 import spacy
+import spacy_transformers
 from typing import List, Tuple
 
 from warc import process_warc_zip, save_pre_proc
-from relation_extraction import Patty
+from relation_extraction import Reverb, Patty
 from ner import get_entities
 from dbpedia_with_EL import generate_candidates, get_most_popular
 
 current_datetime = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 pruned_groups_dict = {
-    "PERSON": "dbo:Person",
-    "GPE": "geo:SpatialThing",
-    "LOC": "geo:Location",
-    "ORG": "dbo:Organisation",
-    "PRODUCT": "dbo:Work",
-    "EVENT": "dbo:Event",
-    "LANGUAGE": "dbo:Language"
+    "PERSON"    : "dbo:Person",
+    "GPE"       : "geo:SpatialThing",
+    "LOC"       : "dbo:Location",
+    "FAC"       : "geo:SpatialThing",
+    "ORG"       : "dbo:Organisation",
+    "PRODUCT"   : "dbo:Work",
+    "EVENT"     : "dbo:Event",
+    "LANGUAGE"  : "dbo:Language",
+    "DATE"      : "owl:Thing"
 }
 
 
@@ -48,8 +51,8 @@ def entity_linking_stage(nlp, rows: List[Tuple[str, str, str, str]]):
     entity_to_url = {}
     for key, _, _, text in rows:
         # TODO scalability, start using pipes https://github.com/explosion/spaCy/issues/1839#issuecomment-357510790
-        text_ents = get_entities(nlp, text)
-        for mention, ent_group in text_ents.items():
+        text_ents = [(ent.text, ent.label_) for ent in nlp(text).ents]
+        for mention, ent_group in text_ents:
             if ent_group in pruned_groups_dict:
                 results = generate_candidates(mention, pruned_groups_dict[ent_group])
                 url = get_most_popular(results)
@@ -62,10 +65,10 @@ def entity_linking_stage(nlp, rows: List[Tuple[str, str, str, str]]):
 
 def relation_extraction_stage(nlp, entity_to_url, pre_proc_dir, relation_dir):
     # TODO scalability, start using pipes https://github.com/explosion/spaCy/issues/1839#issuecomment-357510790
-    patty = Patty(nlp=nlp)
-    rows = patty.extract_relations_from_zip(f"{pre_proc_dir}/warcs-20221210-141217.csv", with_matcher=True)
+    extractor = Reverb(nlp=nlp)
+    rows = extractor.extract_relations_from_zip(f"{pre_proc_dir}/warcs-20221210-141217.csv", with_matcher=True)
     filename = f"{relation_dir}/{current_datetime}"  # Dir seems to be included via save file func TODO centralize this behaviour
-    patty.save_file(current_datetime, rows)
+    extractor.save_file(current_datetime, rows)
     return []
 
 
