@@ -1,45 +1,59 @@
 import ssl
-
+import time
 from SPARQLWrapper import SPARQLWrapper, JSON
 import requests
+import numpy as np
+import csv
+
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
 sparql = SPARQLWrapper("http://dbpedia.org/sparql")
 sparql.setReturnFormat(JSON)
 
-place = 'Place'
-person = 'Person'
-org = 'Organisation'
-product = 'Work'  # Organisation,,,?
-work = 'Work'
-event = 'Event'
-language = "Language"
-
-norp = ["EthnicGroup", "PoliticalParty"]  # low coverage
-fac = ['Infrastructure', 'Airport', "Building", 'Bridge', "Highway"]  # low coverage
-
-groups_dict = {
-    "Person"        : ["Person"],
-    "GPE"           : ["Location", "Place", "Country", "SpatialThing", "Geo"],  # ? Yago:GeoEntity/Region or geo:SpatialThing (this for all spatial things)
-    "LOC"           : ["Location"],
-    "PRODUCT"       : ["Work", "Organisation"],
-    "EVENT"         : ["Event"],
-    "FAC"           : ["Infrastructure", "Airport", "Bridge", "Highway", "Building"],  # ? geo:SpatialThing
-    "LANGUAGE"      : ["Language"],
-    "NORP"          : ["EthincGroup", "PoliticalParty", "Country"],  # ?
-    "WORK_OF_ART"   : ["Work"],
-    "LAW"           : [],
-    "MONEY"         : ["Currency"],  # ?
-    "DATE"          : ["Year", "Month", "Day", "Time"],  # ?
-    "TIME"          : ["Time"],  # ?
-    "CARDINAL"      : [],  # ?
-    "ORDINAL"       : [],  # ?
-    "PERCENT"       : []  # ?
+pruned_groups_dict = {
+    "PERSON"        : "dbo:Person",
+    "GPE"           : "geo:SpatialThing",
+    "LOC"           : "dbo:Location",
+    "FAC"           : "geo:SpatialThing",
+    "ORG"           : "dbo:Organisation",
+    "PRODUCT"       : "owl:Thing",
+    "EVENT"         : "dbo:Event",
+    "LANGUAGE"      : "dbo:Language",
+    "DATE"          : "owl:Thing",
+    "NORP"          : "owl:Thing",
+    "WORK_OF_ART"   : "dbo:Work"
 }
 
-groups = ["dbo:Person", "geo:SpatialThing", "dbo:Organisation", "dbo:Work", "dbo:Event", "dbo:Language"]
+def levenshtein_distance(s1, s2):
+    # base case: if either string is empty, the distance is the length of the other string
+    if len(s1) == 0:
+        return len(s2)
+    if len(s2) == 0:
+        return len(s1)
 
+    # initialize a matrix to store the distances between substrings
+    distances = [[0 for j in range(len(s2) + 1)] for i in range(len(s1) + 1)]
+
+    # set the distance between the empty string and each substring of s2 to be the index of the substring
+    for i in range(len(s2) + 1):
+        distances[0][i] = i
+
+    # set the distance between each substring of s1 and the empty string to be the index of the substring
+    for i in range(len(s1) + 1):
+        distances[i][0] = i
+
+    # compute the distance between each substring of s1 and each substring of s2
+    for i in range(1, len(s1) + 1):
+        for j in range(1, len(s2) + 1):
+            # if the characters at the current indices are the same, the distance is the same as the distance between the substrings without those characters
+            if s1[i - 1] == s2[j - 1]:
+                distances[i][j] = distances[i - 1][j - 1]
+            else:
+                # otherwise, the distance is the minimum of the distances obtained by inserting, deleting, or substituting a character
+                distances[i][j] = min(distances[i][j - 1] + 1, distances[i - 1][j] + 1, distances[i - 1][j - 1] + 1)
+
+    return distances[len(s1)][len(s2)]
 
 def dbpedia_format(mention):
     mention = mention.title().strip()
@@ -50,8 +64,7 @@ def dbpedia_format(mention):
 
 def build_query(mention, group):
     mention_1, mention_2 = dbpedia_format(mention)
-    print(f"({mention_1}) & ({mention_2})")
-    print(group)
+
     return f"""
         PREFIX owl:     <http://www.w3.org/2002/07/owl#>
         PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#>
@@ -64,8 +77,8 @@ def build_query(mention, group):
         PREFIX dbpedia: <http://dbpedia.org/>
         PREFIX skos:    <http://www.w3.org/2004/02/skos/core#>
         PREFIX dbo:     <http://dbpedia.org/ontology/>
+        
         SELECT DISTINCT ?item ?name ?page WHERE {{
-            # VALUES ?groups {{dbo:Person dbo:Location}}
         {{
             # [Case 1] no disambiguation at all (eg. Twitter)
             ?item rdfs:label "{mention_1}"@en .
@@ -88,69 +101,99 @@ def build_query(mention, group):
         }}
         # Filter by entity class
         ?item rdf:type {group} .
+        
         # Grab wikipedia link
         ?item foaf:isPrimaryTopicOf ?page .
+        
         # Get name
         ?item rdfs:label ?name .
         FILTER (langMatches(lang(?name),"en"))
-        # ?item rdf:type ?group .
-        # ?group rdfs:label ?group_name
-        # FILTER (STR(?group_name) IN ("Building", "Airport"))
     }}
     """
 
 
-def generate_candidates(mention, group):
+def generate_candidates(group):
     query = build_query(mention, group)
     sparql.setQuery(query)
-    results = sparql.query().convert()
-    for result in results["results"]["bindings"]:
-        print(result)
-    return results
+    sparql.setTimeout(1000)
+    for i in range(2):
+        try:
+            results = sparql.query().convert()
+            return results
+        except (ConnectionError, TimeoutError):
+            print("Will retry again in a little bit")
+        except Exception as e:
+            print(e)
+        time.sleep(15)
 
 
-def get_most_popular(results):
+
+def get_most_popular_pages(mention, results):
     max_backlinks_len = 0
-    popular_page = None
+    popular_pages = []
     session = requests.Session()
     url = "https://en.wikipedia.org/w/api.php"
+
+    if result is None:
+        return None
 
     for result in results["results"]["bindings"]:
         name = result["page"]
         x = name["value"].split("/")
         name = x[-1]
         params = {
-            "action": "query",
-            "format": "json",
-            "list": "backlinks",
-            "bltitle": name, 
-            'bllimit': 'max'
-
+            "action"        : "query",
+            "format"        : "json",
+            "list"          : "backlinks",
+            "bltitle"       : name, 
+            "bllimit"       : 'max',
+            "blnamespace"   : 4,
+            "blredirect"    : "False"
         }
 
         response = session.get(url=url, params=params)
         json_data = response.json()
-        backlinks = json_data["query"]["backlinks"]
-        backlinks_len = len(backlinks)
-        print(name, backlinks_len)
+        if "query" in json_data:
+            backlinks = json_data["query"]["backlinks"]
+            backlinks_len = len(backlinks)
+            if backlinks_len >= max_backlinks_len:
+                max_backlinks_len = backlinks_len
+                popular_pages.append((result["name"], result["page"]["value"]))
+    
+    return popular_pages
 
-        if backlinks_len > max_backlinks_len:
-            max_backlinks_len = backlinks_len
-            popular_page = result
-    print("max_popularity", popular_page)
-    if popular_page is None:
+
+def get_most_similar_entity(mention, popular_pages):
+    if len(popular_pages) == 0:
         return None
-    return popular_page["page"]["value"]
 
+    distances = [levenshtein_distance(mention, page[0]) for page in popular_pages]
+    best = np.argmax(distances)
+    return popular_pages[best][1]
 
-def main():
-    mention = input("mention: ")
-    group_num = int(input(' [1] Person\n [2] Place\n [3] Org\n [4] Product\n [5] Event\n [6] Language\ngroup: '))
-    group = groups[group_num-1]
-    results = generate_candidates(mention, group)
-    get_most_popular(results)
-    print()
+def get_wikipedia_entity(nlp):
+    global_mention_entity = {}
 
+    with open('popular_page2.csv', 'w', newline='', encoding='UTF-8') as file:
+        writer = csv.writer(file)
+        with open("warcs-20221207-182114.csv", newline='',encoding = 'cp850') as file:
+            csv_reader = csv.reader(file, quoting=csv.QUOTE_NONE, escapechar='\\')
+            for row in csv_reader:
+                document = row[-1]
+                doc = nlp(document)
+                local_mention_entity = {}
+                for ent in doc.ents:
+                    mention = ent.text
+                    group = ent.label_
+                    if group in pruned_groups_dict:
+                        if mention not in global_mention_entity:
+                            candidates = generate_candidates(mention, pruned_groups_dict[group])
+                            popular_pages = get_most_popular_pages(candidates)
+                            link = get_most_similar_entity(mention, popular_pages)
+                            global_mention_entity[mention] = link
+                            local_mention_entity[mention] = link
+                        elif global_mention_entity[mention]:
+                            local_mention_entity[mention] = link
 
-if __name__ == "__main__":
-    main()
+                if len(local_mention_entity) > 0:
+                    writer.writerow([row[0], local_mention_entity])

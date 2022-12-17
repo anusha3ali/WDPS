@@ -15,15 +15,17 @@ from dbpedia_with_EL import generate_candidates, get_most_popular
 current_datetime = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 pruned_groups_dict = {
-    "PERSON"    : "dbo:Person",
-    "GPE"       : "geo:SpatialThing",
-    "LOC"       : "dbo:Location",
-    "FAC"       : "geo:SpatialThing",
-    "ORG"       : "dbo:Organisation",
-    "PRODUCT"   : "dbo:Work",
-    "EVENT"     : "dbo:Event",
-    "LANGUAGE"  : "dbo:Language",
-    "DATE"      : "owl:Thing"
+    "PERSON"        : "dbo:Person",
+    "GPE"           : "geo:SpatialThing",
+    "LOC"           : "dbo:Location",
+    "FAC"           : "geo:SpatialThing",
+    "ORG"           : "dbo:Organisation",
+    "PRODUCT"       : "owl:Thing",
+    "EVENT"         : "dbo:Event",
+    "LANGUAGE"      : "dbo:Language",
+    "DATE"          : "owl:Thing",
+    "NORP"          : "owl:Thing",
+    "WORK_OF_ART"   : "dbo:Work"
 }
 
 
@@ -56,7 +58,6 @@ def entity_linking_stage(nlp, rows: List[Tuple[str, str, str, str]]):
             if ent_group in pruned_groups_dict:
                 results = generate_candidates(mention, pruned_groups_dict[ent_group])
                 url = get_most_popular(results)
-
                 if url is not None:
                     entities.append((key, mention, url))
                     entity_to_url[(key, mention)] = url
