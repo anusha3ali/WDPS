@@ -3,7 +3,6 @@ import time
 
 from SPARQLWrapper import SPARQLWrapper, JSON
 from titlecase import titlecase
-# import urllib
 import time
 
 
@@ -23,8 +22,6 @@ def dbpedia_format(mention):
 
 def build_query(mentions, group, extra=False):
     mention_0, mention_1, mention_2, mention_3 = mentions
-    # print(f"({mention_0}) & {mention_1} & ({mention_2}), {mention_3}")
-    # print(group)
 
     if extra:
         return f"""
@@ -85,7 +82,7 @@ def build_query(mentions, group, extra=False):
             }}
 
             # Filter by entity class
-            ?item rdf:type owl:Thing .
+            ?item rdf:type {group} .
 
             # Grab wikipedia link
             ?item foaf:isPrimaryTopicOf ?page .
@@ -132,7 +129,7 @@ def build_query(mentions, group, extra=False):
             }}
 
             # Filter by entity class
-            ?item rdf:type owl:Thing .
+            ?item rdf:type {group} .
 
             # Grab wikipedia link
             ?item foaf:isPrimaryTopicOf ?page .
