@@ -77,14 +77,14 @@ def get_most_popular_pages(mention, candidates):
     for candidate in candidates["results"]["bindings"]:
         distance = levenshtein_distance(mention, entity_name)
         if distance == 0:
+            entity_name = candidate["name"]["value"] if "value" in candidate["name"] else candidate["name"]
             return (entity_name, candidate["page"]["value"], candidate["item"]["value"])
         distances.append(distance)
     best = np.argmin(distances)
     candidate = candidates[best]
     entity_name = candidate["name"]["value"] if "value" in candidate["name"] else candidate["name"]
     return (entity_name, candidate["page"]["value"], candidate["item"]["value"])
-
-
+    
 
 def get_most_similar_entity(mention, pages):
     if not pages or len(pages) == 0:
