@@ -1,14 +1,9 @@
 import spacy
-# import spacy_transformers
-# from spacy.pipeline import merge_entities
+import spacy_transformers
 from spacy.matcher import Matcher
 from spacy.tokens import Span
-# import stanza
-# import spacy_stanza
 import networkx as nx
 from itertools import combinations
-# import pandas as pd
-# import numpy as np
 import csv
 import datetime
 
@@ -281,6 +276,6 @@ class ReverbNoNlp():
 
 
 if __name__ == "__main__":
-    patty = Patty()
-    rows = patty.extract_relations_from_zip(f"{pre_proc_directory}/warcs-20221210-141217.csv", with_matcher=True)
-    patty.save_file(f"{res_directory}/{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}", rows)
+    reverb = Reverb()
+    rows = reverb.extract_relations_from_zip(f"{pre_proc_directory}/warcs-20221210-141217.csv", with_matcher=True)
+    reverb.save_file(f"{res_directory}/{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}", rows)
