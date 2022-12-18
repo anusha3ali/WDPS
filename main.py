@@ -126,7 +126,7 @@ if __name__ == "__main__":
         pre_proc_files = pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
     else:
         # TODO shouldn't hard code this.
-        pre_proc_files = _load_proc_files_from_csv("pre-proc/warcs-20221210-141217-TMPTEST.csv")
+        pre_proc_files = _load_proc_files_from_csv("pre-proc/warcs-20221210-141217.csv")
 
     # tags disabled in NER disable=["tagger", "attribute_ruler", "lemmatizer"]
     # tags disabled in relation extraction disable=["textcat"]
@@ -145,10 +145,14 @@ if __name__ == "__main__":
         entity_to_url = {}
         for ent in doc.ents:
             mention, ent_group = ent.text, ent.label_
+            # TODO maybe keep set of processed mentions to prevent attempting the get on a mention that couldnt previously be found
             if mention in entity_to_url:
                 continue
             if ent_group in pruned_groups_dict:
                 # TODO: still need to remove the need for this third variable
+                # TODO it groups "Tunis Tunisia" as a single entity which is weird
+                # TODO WP, Flash Player, WordPress returning no results in first doc.
+                # TODO resolve WP to WordPress
                 results = generate_candidates(mention, pruned_groups_dict[ent_group], "dbpedia_with_EL")
                 urls = get_most_popular_pages(results)
                 if urls is not None and len(urls) > 0:
