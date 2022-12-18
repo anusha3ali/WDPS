@@ -104,6 +104,31 @@ def get_most_similar_entity(mention, pages):
     return pages[best]
 
 
+def get_most_refered_page(mention, candidates):
+    if candidates is None or len(candidates["results"]["bindings"]) == 0:
+        return None
+    
+    if len(candidates) == 1:
+        entity_name = candidates[0]["name"]["value"] if "value" in candidates[0]["name"] else candidates[0]["name"]
+        return [(entity_name, candidates[0]["page"]["value"], candidates[0]["item"]["value"])]
+    
+    max_refered_count = 0
+    popular_pages = []
+    for candidate in candidates["results"]["bindings"]:
+        refered_count = int(candidate["count"]["value"])
+        if refered_count >= max_refered_count:
+            max_refered_count = refered_count
+            entity_name = candidate["name"]["value"] if "value" in candidate["name"] else candidate["name"]
+            popular_pages.append((entity_name, candidate["page"]["value"], candidate["item"]["value"], refered_count))
+    
+    most_popular_pages = [page for page in popular_pages if page[-1] == max_refered_count]
+    if len(most_popular_pages) == 1:
+        return most_popular_pages[0]
+    distances = [levenshtein_distance(mention, page[0]) for page in most_popular_pages]
+    best = np.argmax(distances)
+    return most_popular_pages[best]
+
+
 def get_wikipedia_entity(nlp):
     global_mention_entity = {}
     rows = []
@@ -130,8 +155,8 @@ def get_wikipedia_entity(nlp):
                         if group in pruned_groups_dict:
                             if mention not in global_mention_entity:
                                 candidates = generate_candidates(mention, pruned_groups_dict[group], "dbpedia_with_EL")
-                                selected_entity = get_most_popular_pages(mention, candidates)
-                                # selected_entity = get_most_similar_entity(mention, popular_pages)
+                                selected_entity = get_most_refered_page(mention, candidates)
+                                # selected_entity = get_most_popular_pages(mention, candidates)
                                 if selected_entity:
                                     global_mention_entity[mention] = selected_entity[1], selected_entity[2]
                                     local_mention_entity[mention] = selected_entity[1], selected_entity[2]
