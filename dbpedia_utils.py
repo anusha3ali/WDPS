@@ -1,4 +1,6 @@
 import ssl
+import time
+
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 # TODO: is this only for documentation purposes? I don't see any references to it

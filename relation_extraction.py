@@ -226,6 +226,60 @@ class Patty(RelationExtractor):
         return relations
 
 
+class ReverbNoNlp():
+    def __init__(self, vocab):
+        self.pattern = [[
+            {"POS": "VERB"},
+            {"POS": "PART", "OP": "?"},
+            {"POS": "ADV", "OP": "?"},
+            {"POS": {"IN": ["ADJ", "ADV", "NOUN", "PRON", "DET"]}, "OP": "*"},
+            {"POS": {"IN": ["PART", "ADP"]}, "OP": "?"}
+        ]]
+        self.matcher = Matcher(vocab)
+        self.matcher.add("pattern", self.pattern)
+        self.ner_pos = {"PROPN", "NOUN", "NUM"}
+
+    def get_relations(self, sentence):
+        matches = self.matcher(sentence)
+        spans = [sentence[start:end] for _, start, end in matches]
+        spans = spacy.util.filter_spans(spans)
+        return spans
+
+    def extract_relation(self, sentence):
+        relations = []
+        ss = sentence.start
+
+        # Get all named entities that has at least one NOURN/PROPN
+        ents = [e for e in sentence.ents if {t.pos_ for t in sentence[e.start - ss:e.end - ss]} & self.ner_pos]
+
+        # Stop if there are less than 2 named entities
+        if len(ents) < 2:
+            return relations
+
+        # Extract all possible relations in the sentence
+        spans = self.get_relations(sentence)
+
+        # Find two entities on the either side of the relation to create a relation tuple
+        for relation in spans:
+            rs = relation.start
+            left = []
+            right = []
+            # Divide the entities based on its orientation w.r.t. the relation
+            for e in ents:
+                offset = e.start - rs
+                if offset < 0:
+                    left.append((-offset, e))
+                else:
+                    right.append((offset, e))
+            # Select entities that are closest to the relation on the either side
+            if len(left) and len(right):
+                sorted_left = [x for _, x in sorted(left)]
+                sorted_right = [x for _, x in sorted(right)]
+                e1, e2 = sorted_left[0], sorted_right[0]
+                relations.append((e1, relation.text.lower(), e2))
+        return relations
+
+
 if __name__ == "__main__":
     patty = Patty()
     rows = patty.extract_relations_from_zip(f"{pre_proc_directory}/warcs-20221210-141217.csv", with_matcher=True)
