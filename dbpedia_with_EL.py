@@ -111,7 +111,7 @@ def get_most_refered_page(mention, candidates):
     
     if len(candidates) == 1:
         entity_name = candidates[0]["name"]["value"] if "value" in candidates[0]["name"] else candidates[0]["name"]
-        return [(entity_name, candidates[0]["page"]["value"], candidates[0]["item"]["value"])]
+        return [(entity_name, candidates[0]["page"]["value"], candidates[0]["item"]["value"])] # TODO why is this a list?
     
     max_refered_count = 0
     popular_pages = []
@@ -187,8 +187,9 @@ def get_wikipedia_entity(nlp):
     print(f"DONE, {unliked_mentions} unliked mentions out of {total_documents} documents and {total_mentions} mentions.")
 
 
-import spacy, spacy_transformers
-nlp_model = spacy.load("en_core_web_trf", disable=["textcat", "tok2vec", "tagger", "parser", "attribute_ruler", "lemmatizer"])
-start = time.time()
-get_wikipedia_entity(nlp_model)
-print(time.time() - start)
+if __name__ == "__main__":
+    import spacy, spacy_transformers
+    nlp_model = spacy.load("en_core_web_trf", disable=["textcat", "tok2vec", "tagger", "parser", "attribute_ruler", "lemmatizer"])
+    start = time.time()
+    get_wikipedia_entity(nlp_model)
+    print(time.time() - start)
