@@ -3,6 +3,7 @@ import requests
 import numpy as np
 import csv
 import time
+import json
 from Levenshtein import distance as levenshtein_distance
 
 from dbpedia_utils import generate_candidates
@@ -14,10 +15,10 @@ pruned_groups_dict = {
     "GPE"           : "geo:SpatialThing",
     "LOC"           : "geo:SpatialThing",
     "FAC"           : "geo:SpatialThing",
+    "LANGUAGE"      : "owl:Language",
     "ORG"           : "owl:Thing",
     "PRODUCT"       : "owl:Thing",
     "EVENT"         : "owl:Thing",
-    "LANGUAGE"      : "owl:Thing",
     "DATE"          : "owl:Thing",
     "NORP"          : "owl:Thing",
     "WORK_OF_ART"   : "owl:Thing",
@@ -69,15 +70,12 @@ def get_most_popular_pages(mention, candidates):
         distances = [levenshtein_distance(mention, page[0]) for page in most_popular_pages]
         best = np.argmin(distances)
         return most_popular_pages[best]
-
-    # if len(most_popular_pages) > 0:
-    #     return most_popular_pages
     
     distances = []
     for candidate in candidates["results"]["bindings"]:
+        entity_name = candidate["name"]["value"] if "value" in candidate["name"] else candidate["name"]
         distance = levenshtein_distance(mention, entity_name)
         if distance == 0:
-            entity_name = candidate["name"]["value"] if "value" in candidate["name"] else candidate["name"]
             return (entity_name, candidate["page"]["value"], candidate["item"]["value"])
         distances.append(distance)
     best = np.argmin(distances)
@@ -125,7 +123,7 @@ def get_most_refered_page(mention, candidates):
     if len(most_popular_pages) == 1:
         return most_popular_pages[0]
     distances = [levenshtein_distance(mention, page[0]) for page in most_popular_pages]
-    best = np.argmax(distances)
+    best = np.argmin(distances)
     return most_popular_pages[best]
 
 
@@ -135,6 +133,7 @@ def get_wikipedia_entity(nlp):
     unliked_mentions = 0
     total_mentions = 0
     total_documents = 0
+    total_dictionary_vist = 0
     
     with open('popular_page_db.csv', 'w', newline='', encoding='UTF-8') as file:
         writer_db = csv.writer(file, delimiter='\t')
@@ -151,17 +150,22 @@ def get_wikipedia_entity(nlp):
                     print(total_documents)
                     for ent in ents:
                         mention = ent.text
+                        mention_key = ' '.join(mention.strip().lower().split())
                         group = ent.label_
                         if group in pruned_groups_dict:
-                            if mention not in global_mention_entity:
+                            if mention_key not in global_mention_entity:
                                 candidates = generate_candidates(mention, pruned_groups_dict[group], "dbpedia_with_EL")
                                 selected_entity = get_most_refered_page(mention, candidates)
                                 # selected_entity = get_most_popular_pages(mention, candidates)
+                                print(mention, selected_entity)
                                 if selected_entity:
-                                    global_mention_entity[mention] = selected_entity[1], selected_entity[2]
+                                    global_mention_entity[mention_key] = selected_entity[1], selected_entity[2]
                                     local_mention_entity[mention] = selected_entity[1], selected_entity[2]
-                            elif global_mention_entity[mention]:
-                                local_mention_entity[mention] = global_mention_entity[mention]
+                                else:
+                                    global_mention_entity[mention_key] = None
+                            elif global_mention_entity[mention_key]:
+                                total_dictionary_vist += 1
+                                local_mention_entity[mention] = global_mention_entity[mention_key]
                             else:
                                 unliked_mentions += 1
 
@@ -169,12 +173,12 @@ def get_wikipedia_entity(nlp):
                         rows = [[f"ENTITY: {row[0]}", mention, link[0]] for mention, link in local_mention_entity.items()]
                         writer.writerows(rows)
                         writer_db.writerows(rows)
-                       
+    json.dump(global_mention_entity, open("globa_dict.json", "w"))                       
     print(f"DONE, {unliked_mentions} unliked mentions out of {total_documents} documents and {total_mentions} mentions.")
 
 
 import spacy, spacy_transformers
-nlp_model = spacy.load("en_core_web_trf", disable=["textcat"])
+nlp_model = spacy.load("en_core_web_trf", disable=["textcat", "tok2vec", "tagger", "parser", "attribute_ruler", "lemmatizer"])
 start = time.time()
 get_wikipedia_entity(nlp_model)
-print(time.time()-start)
+print(time.time() - start)

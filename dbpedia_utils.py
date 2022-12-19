@@ -22,7 +22,6 @@ def dbpedia_format(mention):
 
 def build_query(mentions, group, extra=False):
     mention_0, mention_1, mention_2, mention_3 = mentions
-
     if extra:
         return f"""
             PREFIX owl:     <http://www.w3.org/2002/07/owl#>
@@ -150,7 +149,7 @@ def generate_candidates(mention, group, query_identifier):
     extra = mentions[0] != mentions[2]
     query = build_query(mentions, group, extra=extra)
     sparql.setQuery(query)
-    sparql.setTimeout(1000)
+    sparql.setTimeout(150)
     for _ in range(2):
         try:
             results = sparql.query().convert()

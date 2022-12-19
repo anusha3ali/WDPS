@@ -132,6 +132,9 @@ if __name__ == "__main__":
     # tags disabled in relation extraction disable=["textcat"]
     # Processing of entire warc file using nlp.pipe with sm model takes 38s and with trf 2197s (about 36.6 minutes)
     nlp_model = spacy.load("en_core_web_sm", disable=["textcat"])
+    
+    # !! Disambing more pipelines might also help
+    # nlp_model = spacy.load("en_core_web_trf", disable=["textcat", "tok2vec", "tagger", "parser", "attribute_ruler", "lemmatizer"])
 
     text_context = [(pre_proc_file[3], pre_proc_file[0]) for pre_proc_file in pre_proc_files]
     doc_tuples = nlp_model.pipe(text_context, as_tuples=True)
