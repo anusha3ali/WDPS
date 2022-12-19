@@ -9,7 +9,9 @@ gold = {}
 for line in open(gold_file):
     if type in line:
         if type == 'ENTITY':
-            record, type, string, entity = line.strip().split('\t')
+            if len(line.strip().split('\t')) != 3:
+                continue
+            record, string, entity = line.strip()[8:].split('\t')
             gold[(record, string)] = entity
         if type == 'RELATION':
             record, type, string, s, o, rel_id = line.strip().split('\t')

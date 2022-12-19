@@ -65,6 +65,9 @@ def get_most_popular_pages(mention, candidates):
                 entity_name = candidate["name"]["value"] if "value" in candidate["name"] else candidate["name"]
                 popular_pages.append((entity_name, candidate["page"]["value"], candidate["item"]["value"], backlinks_len))
     
+    if len(popular_pages) == 0:
+        return popular_pages[0]
+
     if len(popular_pages) > 0:
         most_popular_pages = [page for page in popular_pages if page[-1] == max_backlinks_len]
         distances = [levenshtein_distance(mention, page[0]) for page in most_popular_pages]
@@ -128,7 +131,8 @@ def get_most_refered_page(mention, candidates):
 
 
 def get_wikipedia_entity(nlp):
-    global_mention_entity = {}
+    # global_mention_entity = {}
+    global_mention_entity = json.load(open("./global_dict.json", "r"))
     rows = []
     unliked_mentions = 0
     total_mentions = 0
@@ -143,35 +147,41 @@ def get_wikipedia_entity(nlp):
                 csv_reader = csv.reader(file, quoting=csv.QUOTE_NONE, escapechar='\\')
                 for row in csv_reader:
                     text = row[-1]
-                    ents = nlp(text).ents
+                    ents = {(ent.text, ent.label_) for ent in nlp(text).ents}
                     local_mention_entity = {}
                     total_documents += 1
                     total_mentions += len(ents)
-                    print(total_documents)
-                    for ent in ents:
-                        mention = ent.text
+                    # print(total_documents)
+                    for mention, group in ents:
                         mention_key = ' '.join(mention.strip().lower().split())
-                        group = ent.label_
                         if group in pruned_groups_dict:
+                            # mention is not in global dictionary
                             if mention_key not in global_mention_entity:
                                 candidates = generate_candidates(mention, pruned_groups_dict[group], "dbpedia_with_EL")
                                 selected_entity = get_most_refered_page(mention, candidates)
                                 # selected_entity = get_most_popular_pages(mention, candidates)
-                                print(mention, selected_entity)
+                                # print("*", mention, selected_entity)
+                                # mention is linked
                                 if selected_entity:
                                     global_mention_entity[mention_key] = selected_entity[1], selected_entity[2]
                                     local_mention_entity[mention] = selected_entity[1], selected_entity[2]
+                                # mention is not matched
                                 else:
+                                    unliked_mentions += 1
                                     global_mention_entity[mention_key] = None
+                            # mention has a valid entity in global dictionary
                             elif global_mention_entity[mention_key]:
+                                # print("*", mention, "-> lookup")
                                 total_dictionary_vist += 1
                                 local_mention_entity[mention] = global_mention_entity[mention_key]
+                            # mention does not have a valid entity in global dictionary
                             else:
                                 unliked_mentions += 1
 
                     if len(local_mention_entity) > 0:
                         rows = [[f"ENTITY: {row[0]}", mention, link[0]] for mention, link in local_mention_entity.items()]
                         writer.writerows(rows)
+                        rows = [[f"ENTITY: {row[0]}", mention, link[1]] for mention, link in local_mention_entity.items()]
                         writer_db.writerows(rows)
     json.dump(global_mention_entity, open("globa_dict.json", "w"))                       
     print(f"DONE, {unliked_mentions} unliked mentions out of {total_documents} documents and {total_mentions} mentions.")
