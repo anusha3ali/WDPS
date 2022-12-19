@@ -38,7 +38,7 @@ def build_query(mentions, group, extra=False):
             PREFIX dbo:     <http://dbpedia.org/ontology/>
 
 
-            SELECT DISTINCT ?item ?name ?page WHERE {{
+            SELECT DISTINCT ?item ?name ?page (COUNT(?source) as ?count) WHERE {{
             {{
                 # [Case 1] no disambiguation at all (eg. Twitter)
                 ?item rdfs:label "{mention_2}"@en .
@@ -84,6 +84,8 @@ def build_query(mentions, group, extra=False):
             # Filter by entity class
             ?item rdf:type {group} .
 
+            ?source dbo:wikiPageWikiLink ?item .
+
             # Grab wikipedia link
             ?item foaf:isPrimaryTopicOf ?page .
 
@@ -106,7 +108,7 @@ def build_query(mentions, group, extra=False):
             PREFIX dbo:     <http://dbpedia.org/ontology/>
 
 
-            SELECT DISTINCT ?item ?name ?page WHERE {{
+            SELECT DISTINCT ?item ?name ?page (COUNT(?source) as ?count) WHERE {{
             {{
                 # [Case 1] no disambiguation at all (eg. Twitter)
                 ?item rdfs:label "{mention_2}"@en .
@@ -130,6 +132,8 @@ def build_query(mentions, group, extra=False):
 
             # Filter by entity class
             ?item rdf:type {group} .
+
+            ?source dbo:wikiPageWikiLink ?item .
 
             # Grab wikipedia link
             ?item foaf:isPrimaryTopicOf ?page .
