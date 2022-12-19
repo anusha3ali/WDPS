@@ -10,7 +10,7 @@ from typing import List, Tuple
 from warc import process_warc_zip, save_pre_proc
 from relation_extraction import Reverb, Patty, ReverbNoNlp
 from ner import get_entities
-from dbpedia_with_EL import generate_candidates, get_most_popular_pages
+from dbpedia_with_EL import generate_candidates, get_most_popular_pages, get_most_refered_page
 
 current_datetime = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         pre_proc_files = pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
     else:
         # TODO shouldn't hard code this.
-        pre_proc_files = _load_proc_files_from_csv("pre-proc/warcs-20221210-141217.csv")
+        pre_proc_files = _load_proc_files_from_csv("pre-proc/warcs-20221210-141217-TMP.csv")
 
     # tags disabled in NER disable=["tagger", "attribute_ruler", "lemmatizer"]
     # tags disabled in relation extraction disable=["textcat"]
@@ -146,21 +146,22 @@ if __name__ == "__main__":
     for doc, key in doc_tuples:
         entities = []
         entity_to_url = {}
+        mentions = set()
         for ent in doc.ents:
             mention, ent_group = ent.text, ent.label_
-            # TODO maybe keep set of processed mentions to prevent attempting the get on a mention that couldnt previously be found
-            if mention in entity_to_url:
+            if mention in mentions or mention in entity_to_url:
                 continue
+            mentions.add(mention)
             if ent_group in pruned_groups_dict:
                 # TODO: still need to remove the need for this third variable
                 # TODO it groups "Tunis Tunisia" as a single entity which is weird
                 # TODO WP, Flash Player, WordPress returning no results in first doc.
                 # TODO resolve WP to WordPress
                 results = generate_candidates(mention, pruned_groups_dict[ent_group], "dbpedia_with_EL")
-                urls = get_most_popular_pages(results)
+                urls = get_most_refered_page(mention, results)
                 if urls is not None and len(urls) > 0:
-                    entities.append((key, mention, urls[0]))
-                    entity_to_url[mention] = urls[0]
+                    entities.append((key, mention, urls[1]))
+                    entity_to_url[mention] = urls[1]
         confirmed_relations = []
         # TODO find a way to create less reverbs, matcher is reinitialized on vocab every time.
         rnn = ReverbNoNlp(vocab)
