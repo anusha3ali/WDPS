@@ -9,7 +9,6 @@ from typing import List, Tuple
 
 from warc import process_warc_zip, save_pre_proc
 from relation_extraction import Reverb, Patty, ReverbNoNlp
-from ner import get_entities
 from dbpedia_with_EL import generate_candidates, get_most_popular_pages, get_most_refered_page
 
 current_datetime = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -133,7 +132,7 @@ if __name__ == "__main__":
     # Processing of entire warc file using nlp.pipe with sm model takes 38s and with trf 2197s (about 36.6 minutes)
     nlp_model = spacy.load("en_core_web_sm", disable=["textcat"])
     
-    # !! Disambing more pipelines might also help
+    # TODO Disambling more pipelines might also help
     # nlp_model = spacy.load("en_core_web_trf", disable=["textcat", "tok2vec", "tagger", "parser", "attribute_ruler", "lemmatizer"])
 
     text_context = [(pre_proc_file[3], pre_proc_file[0]) for pre_proc_file in pre_proc_files]
