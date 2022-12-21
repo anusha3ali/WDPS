@@ -17,7 +17,7 @@ pruned_groups_dict = {
     "LOC"           : "geo:SpatialThing",
     "FAC"           : "geo:SpatialThing",
     "LANGUAGE"      : "dbo:Language",
-    "ORG"           : "owl:Thing",
+    "ORG"           : "dbo:Organisation",
     "PRODUCT"       : "owl:Thing",
     "EVENT"         : "dbo:Event",
     "DATE"          : "owl:Thing",
