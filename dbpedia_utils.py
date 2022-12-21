@@ -160,4 +160,4 @@ def generate_candidates(mention, group, query_identifier):
             pass
         time.sleep(15)
     # TODO: remove this before submitting
-    print(f"{mention} in {group} not found")
+    # print(f"{mention} in {group} not found")
