@@ -1,3 +1,14 @@
+# Installation
+
+```cmd
+pip3 install -r requirements.txt
+RUN python3 -m spacy download en_core_web_trf
+```
+
+# Run
+
+Run main.py which will run on data/warcs/sample.warc.gz, performing the pre-processing, entity linking and relation extraction.
+
 # Docker quick guide
 
 Build using:
