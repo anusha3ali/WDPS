@@ -144,7 +144,7 @@ def build_query(mentions, group, extra=False, tmp=False):
         """
 
 
-def generate_candidates(mention, group, query_identifier):
+def generate_candidates(mention, group):
     mentions = dbpedia_format(mention)
     extra = mentions[0] != mentions[2]
     query = build_query(mentions, group, extra=extra)
@@ -159,5 +159,3 @@ def generate_candidates(mention, group, query_identifier):
         except Exception as e:
             pass
         time.sleep(15)
-    # TODO: remove this before submitting
-    # print(f"{mention} in {group} not found")

@@ -140,7 +140,7 @@ def link_entity(text, global_mention_entity):
         if group in pruned_groups_dict:
             # mention is not in global dictionary
             if mention_key not in global_mention_entity:
-                candidates = generate_candidates(mention, pruned_groups_dict[group], "dbpedia_with_EL")
+                candidates = generate_candidates(mention, pruned_groups_dict[group])
                 link = get_most_refered_page(mention, candidates)
                 # selected_entity = get_most_popular_pages(mention, candidates)
                 # print("*", mention, selected_entity)
