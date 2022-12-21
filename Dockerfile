@@ -4,8 +4,8 @@ WORKDIR /app
 
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
+RUN python3 -m spacy download en_core_web_trf
 
-# Should pre-proc be copied or the word vec model etc?
 COPY . .
 
-CMD [ "python3", "warc.py", "--warc_output", "warc-pre-proc" ]
+CMD [ "python3", "main.py"]
