@@ -63,6 +63,7 @@ class Extraction:
             res.append(Extraction.entity_to_str(key, mention, link))
         for wiki1, relation, wiki2 in relations:
             res.append(Extraction.relation_to_str(key, wiki1, wiki2, relation))
+        return res
 
     @staticmethod
     def entity_to_str(key, mention, link):
@@ -105,10 +106,12 @@ def find_linked_relations(pre_proc_files, model_name, pool_size):
     results.sort()
 
     for result in results:
-        print(result)
+        for entry in result:
+            print(entry)
 
     with open("data/out", "w", encoding='UTF-8') as out_file:
-        out_file.write("\n".join(results))
+        for result in results:
+            out_file.write("\n".join(result))
 
 
 def _load_proc_files_from_csv(file_path):
@@ -148,5 +151,4 @@ if __name__ == "__main__":
 
     pre_proc_files = pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
 
-
-    find_linked_relations(pre_proc_files, "en_core_web_trf", 1)
+    find_linked_relations(pre_proc_files, "en_core_web_trf", mp.cpu_count())
