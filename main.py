@@ -63,6 +63,7 @@ class Extraction:
             res.append(Extraction.entity_to_str(key, mention, link))
         for wiki1, relation, wiki2 in relations:
             res.append(Extraction.relation_to_str(key, linked_entity_dict[wiki1], linked_entity_dict[wiki2], relation))
+            # print("row_processed")
         return res
 
     @staticmethod
@@ -88,6 +89,7 @@ def find_linked_relations(pre_proc_files, model_name, pool_size):
     vocab = nlp.vocab
 
     text_context = [(pre_proc_file[3], pre_proc_file[0]) for pre_proc_file in pre_proc_files]
+    # print("start with pipe")
     doc_tuples = nlp.pipe(text_context, as_tuples=True)
 
     if pool_size == 1:
@@ -154,8 +156,9 @@ if __name__ == "__main__":
 
     create_dirs(args.pre_proc_dir, args.relations_dir)
 
-    pre_proc_files = _load_proc_files_from_csv("pre-proc/warcs-20221210-141217.csv")  # pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
+    # pre_proc_files = _load_proc_files_from_csv("pre-proc/warcs-20221210-141217.csv")
+    pre_proc_files = pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
     # pre_proc_files = pre_proc_files[900:1000]
     # pre_proc_files = [pre_proc_files[132]]  # warc 147
 
-    find_linked_relations(pre_proc_files, "en_core_web_trf", 1)
+    find_linked_relations(pre_proc_files, "en_core_web_trf", mp.cpu_count())
