@@ -1,6 +1,6 @@
 # Installation
 
-```cmd
+```console
 pip3 install -r requirements.txt
 RUN python3 -m spacy download en_core_web_trf
 ```
@@ -10,6 +10,18 @@ RUN python3 -m spacy download en_core_web_trf
 Run main.py which will run on data/warcs/sample.warc.gz, performing the pre-processing, entity linking and relation extraction.
 
 # Docker quick guide
+
+Get our implementation from docker hub:
+
+```console
+docker pull tawvk/wdp-docker
+```
+
+Run docker hub image:
+
+```console
+docker run -t tawvk/wdp-docker
+```
 
 Build using:
 
