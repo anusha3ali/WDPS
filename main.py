@@ -112,6 +112,7 @@ def find_linked_relations(pre_proc_files, model_name, pool_size):
     with open("data/out", "w", encoding='UTF-8') as out_file:
         for result in results:
             out_file.write("\n".join(result))
+            out_file.write("\n")
 
 
 def _load_proc_files_from_csv(file_path):
@@ -150,5 +151,6 @@ if __name__ == "__main__":
     create_dirs(args.pre_proc_dir, args.relations_dir)
 
     pre_proc_files = pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
+    pre_proc_files = pre_proc_files[:100]
 
     find_linked_relations(pre_proc_files, "en_core_web_trf", mp.cpu_count())

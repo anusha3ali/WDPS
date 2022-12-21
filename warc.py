@@ -224,7 +224,7 @@ def process_warc_zip() -> List[Tuple[str, str, str, str]]:
     :rtype: List[Tuple[str, str, str, str]]
     """
     # Dependency of nltk.tokenize
-    nltk.download("punkt")
+    nltk.download("punkt", quiet=True)
 
     with gzip.open("data/warcs/sample.warc.gz", 'rt', errors='ignore') as fo:
         pool_size = mp.cpu_count()
@@ -260,9 +260,6 @@ def save_pre_proc(
 
         # Write rows if the row is valid.
         writer.writerows(processed_files)
-
-        # Print complete path to pre processed CSV file.
-        print(f"{os.getcwd()}/{file.name}")
 
 
 def _valid_row(row: Union[Tuple[str, str, str, str], Tuple[None, None, None, None]]) -> bool:
