@@ -13,14 +13,14 @@ sparql.setReturnFormat(JSON)
 
 
 def dbpedia_format(mention):
-    mention_0 = ' '.join(mention.strip().split())
+    mention_0 = ' '.join(mention.strip().strip("'\"").split())
     mention_1 = mention_0.replace(' ', '_')
     mention_2 = titlecase(mention_0)
     mention_3 = mention_2.replace(' ', '_')
     return mention_0, mention_1, mention_2, mention_3
 
 
-def build_query(mentions, group, extra=False):
+def build_query(mentions, group, extra=False, tmp=False):
     mention_0, mention_1, mention_2, mention_3 = mentions
     if extra:
         return f"""
@@ -159,3 +159,5 @@ def generate_candidates(mention, group, query_identifier):
         except Exception as e:
             pass
         time.sleep(15)
+    # TODO: remove this before submitting
+    print(f"{mention} in {group} not found")

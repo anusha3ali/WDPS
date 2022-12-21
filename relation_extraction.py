@@ -61,7 +61,7 @@ class Reverb(RelationExtractor):
         return spans
 
     # TODO shouldnt this be extract_relations and not ..._relation to override the superclass.
-    def extract_relation(self, sentence):
+    def extract_relations(self, sentence):
         relations = []
         ss = sentence.start
         
@@ -221,7 +221,7 @@ class Patty(RelationExtractor):
         return relations
 
 
-class ReverbNoNlp():
+class ReverbNoNlp:
     def __init__(self, vocab):
         self.pattern = [[
             {"POS": "VERB"},
@@ -240,7 +240,7 @@ class ReverbNoNlp():
         spans = spacy.util.filter_spans(spans)
         return spans
 
-    def extract_relation(self, sentence):
+    def extract_relations(self, sentence):
         relations = []
         ss = sentence.start
 
@@ -270,12 +270,22 @@ class ReverbNoNlp():
             if len(left) and len(right):
                 sorted_left = [x for _, x in sorted(left)]
                 sorted_right = [x for _, x in sorted(right)]
-                e1, e2 = sorted_left[0], sorted_right[0]
+                e1, e2 = sorted_left[0].text, sorted_right[0].text
                 relations.append((e1, relation.text.lower(), e2))
         return relations
+
+    def extract_spacy_relations(self, text, valid_entities):
+        formatted_relations = []
+        sentences = [s for s in text.sents]
+        for sentence in sentences:
+            relations = self.extract_relations(sentence)
+            for e1, r, e2 in relations:
+                if e1 in valid_entities and e2 in valid_entities:
+                    formatted_relations.append((e1, r, e2))
+        return formatted_relations
 
 
 if __name__ == "__main__":
     reverb = Reverb()
-    rows = reverb.extract_relations_from_zip(f"{pre_proc_directory}/warcs-20221210-141217.csv", with_matcher=True)
+    rows = reverb.extract_relations_from_zip(f"{pre_proc_directory}/warcs-20221210-141217.csv")
     reverb.save_file(f"{res_directory}/{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}", rows)

@@ -160,11 +160,9 @@ def _get_soup_text(html_soup: BeautifulSoup) -> str:
     :return: Joined sentences from all header and p tags.
     :rtype: str
     """
-    flag = 1
-    if flag == 1:
-        text_tags = [text_tag.text for text_tag in html_soup.find_all(re.compile('^h[1-6]$')) + html_soup.find_all('p')
-                     if text_tag.text is not None]
-        return _join_sentences(text_tags)
+    text_tags = [text_tag.text for text_tag in html_soup.find_all(re.compile('^h[1-6]$')) + html_soup.find_all('p')
+                 if text_tag.text is not None]
+    return _join_sentences(text_tags)
     # Could also return all text, would also include text included via div or span that is not in h or p tag.
     # return html_soup.get_text()
 
@@ -302,4 +300,4 @@ if __name__ == "__main__":
 
     pre_proc = process_warc_zip()
 
-    save_pre_proc(pre_proc, warc_filename)
+    save_pre_proc("pre-proc", pre_proc, warc_filename)

@@ -4,6 +4,7 @@ import numpy as np
 import csv
 import time
 import json
+import multiprocessing as mp
 from Levenshtein import distance as levenshtein_distance
 
 from dbpedia_utils import generate_candidates
@@ -15,13 +16,13 @@ pruned_groups_dict = {
     "GPE"           : "geo:SpatialThing",
     "LOC"           : "geo:SpatialThing",
     "FAC"           : "geo:SpatialThing",
-    "LANGUAGE"      : "owl:Language",
+    "LANGUAGE"      : "dbo:Language",
     "ORG"           : "owl:Thing",
     "PRODUCT"       : "owl:Thing",
-    "EVENT"         : "owl:Thing",
+    "EVENT"         : "dbo:Event",
     "DATE"          : "owl:Thing",
     "NORP"          : "owl:Thing",
-    "WORK_OF_ART"   : "owl:Thing",
+    "WORK_OF_ART"   : "dbo:Work"
 }
 
 
@@ -111,7 +112,7 @@ def get_most_refered_page(mention, candidates):
     
     if len(candidates) == 1:
         entity_name = candidates[0]["name"]["value"] if "value" in candidates[0]["name"] else candidates[0]["name"]
-        return candidates[0]["page"]["value"] # TODO why is this a list?
+        return candidates[0]["page"]["value"]  # TODO why is this a list?
     
     max_refered_count = 0
     popular_pages = []
@@ -130,65 +131,93 @@ def get_most_refered_page(mention, candidates):
     return most_popular_pages[best][1]
 
 
+def link_entity(text):
+    global_mention_entity = {}
+    ents = {(ent.text, ent.label_) for ent in text.ents}
+    local_mention_entity = {}
+    # print(total_documents)
+    for mention, group in ents:
+        mention_key = ' '.join(mention.strip().lower().split())
+        if group in pruned_groups_dict:
+            # mention is not in global dictionary
+            if mention_key not in global_mention_entity:
+                candidates = generate_candidates(mention, pruned_groups_dict[group], "dbpedia_with_EL")
+                link = get_most_refered_page(mention, candidates)
+                # selected_entity = get_most_popular_pages(mention, candidates)
+                # print("*", mention, selected_entity)
+                # mention is linked
+                if link:
+                    global_mention_entity[mention_key] = link
+                    local_mention_entity[mention] = link
+                # mention is not matched
+                else:
+                    global_mention_entity[mention_key] = None
+            # mention has a valid entity in global dictionary
+            elif global_mention_entity[mention_key]:
+                # print("*", mention, "-> lookup")
+                local_mention_entity[mention] = global_mention_entity[mention_key]
+    return local_mention_entity
+
+
+def process_row(text_key):
+    global_mention_entity = {}
+    text, key = text_key
+    ents = {(ent.text, ent.label_) for ent in text.ents}
+    local_mention_entity = {}
+    # print(total_documents)
+    for mention, group in ents:
+        mention_key = ' '.join(mention.strip().lower().split())
+        if group in pruned_groups_dict:
+            # mention is not in global dictionary
+            if mention_key not in global_mention_entity:
+                candidates = generate_candidates(mention, pruned_groups_dict[group], "dbpedia_with_EL")
+                link = get_most_refered_page(mention, candidates)
+                # selected_entity = get_most_popular_pages(mention, candidates)
+                # print("*", mention, selected_entity)
+                # mention is linked
+                if link:
+                    global_mention_entity[mention_key] = link
+                    local_mention_entity[mention] = link
+                # mention is not matched
+                else:
+                    global_mention_entity[mention_key] = None
+            # mention has a valid entity in global dictionary
+            elif global_mention_entity[mention_key]:
+                # print("*", mention, "-> lookup")
+                local_mention_entity[mention] = global_mention_entity[mention_key]
+
+    if len(local_mention_entity) > 0:
+        return [[f"ENTITY: {key}", mention, link] for mention, link in local_mention_entity.items()]
+    return []
+
+
 def get_wikipedia_entity(nlp):
-    # global_mention_entity = {}
-    global_mention_entity = json.load(open("./global_dict.json", "r"))
-    rows = []
-    unliked_mentions = 0
-    total_mentions = 0
-    total_documents = 0
-    total_dictionary_vist = 0
-    
     with open('popular_page_db.csv', 'w', newline='', encoding='UTF-8') as file:
         writer_db = csv.writer(file, delimiter='\t')
         with open('popular_page_wiki.csv', 'w', newline='', encoding='UTF-8') as file:
             writer = csv.writer(file, delimiter='\t')
-            with open("./pre-proc/warcs-20221207-182114.csv", newline='', encoding='cp850') as file:
+            with open("./pre-proc/warcs-20221210-141217-TMPTEST.csv", newline='', encoding='cp850') as file:
                 csv_reader = csv.reader(file, quoting=csv.QUOTE_NONE, escapechar='\\')
-                for row in csv_reader:
-                    text = row[-1]
-                    ents = {(ent.text, ent.label_) for ent in nlp(text).ents}
-                    local_mention_entity = {}
-                    total_documents += 1
-                    total_mentions += len(ents)
-                    # print(total_documents)
-                    for mention, group in ents:
-                        mention_key = ' '.join(mention.strip().lower().split())
-                        if group in pruned_groups_dict:
-                            # mention is not in global dictionary
-                            if mention_key not in global_mention_entity:
-                                candidates = generate_candidates(mention, pruned_groups_dict[group], "dbpedia_with_EL")
-                                link = get_most_refered_page(mention, candidates)
-                                # selected_entity = get_most_popular_pages(mention, candidates)
-                                # print("*", mention, selected_entity)
-                                # mention is linked
-                                if link:
-                                    global_mention_entity[mention_key] = link
-                                    local_mention_entity[mention] = link
-                                # mention is not matched
-                                else:
-                                    unliked_mentions += 1
-                                    global_mention_entity[mention_key] = None
-                            # mention has a valid entity in global dictionary
-                            elif global_mention_entity[mention_key]:
-                                # print("*", mention, "-> lookup")
-                                total_dictionary_vist += 1
-                                local_mention_entity[mention] = global_mention_entity[mention_key]
-                            # mention does not have a valid entity in global dictionary
-                            else:
-                                unliked_mentions += 1
+                text_context = [(csv_row[3], csv_row[0]) for csv_row in csv_reader]
+                doc_tuples = nlp.pipe(text_context, as_tuples=True)
+                pool_size = mp.cpu_count()
+                pool_size = 1
+                if pool_size == 1:
+                    row_rows = []
+                    for text_key in doc_tuples:
+                        row_rows.append(process_row(text_key))
+                else:
+                    with mp.Pool(processes=pool_size) as pool:
 
-                    if len(local_mention_entity) > 0:
-                        rows = [[f"ENTITY: {row[0]}", mention, link] for mention, link in local_mention_entity.items()]
+                        row_rows = pool.map(process_row, doc_tuples)
+                for rows in row_rows:
+                    if len(rows) > 0:
                         writer.writerows(rows)
-                        # rows = [[f"ENTITY: {row[0]}", mention, link[1]] for mention, link in local_mention_entity.items()]
-                        # writer_db.writerows(rows)
-    # json.dump(global_mention_entity, open("globa_dict.json", "w"))                       
-    print(f"DONE, {unliked_mentions} unliked mentions out of {total_documents} documents and {total_mentions} mentions.")
 
 
 if __name__ == "__main__":
-    import spacy, spacy_transformers
+    import spacy
+    import spacy_transformers
     nlp_model = spacy.load("en_core_web_trf", disable=["textcat", "tok2vec", "tagger", "parser", "attribute_ruler", "lemmatizer"])
     start = time.time()
     get_wikipedia_entity(nlp_model)
