@@ -196,7 +196,7 @@ def get_wikipedia_entity(nlp):
         writer_db = csv.writer(file, delimiter='\t')
         with open('popular_page_wiki.csv', 'w', newline='', encoding='UTF-8') as file:
             writer = csv.writer(file, delimiter='\t')
-            with open("./pre-proc/warcs-20221210-141217-TMPTEST.csv", newline='', encoding='cp850') as file:
+            with open("./pre-proc/warcs-20221210-141217.csv", newline='', encoding='cp850') as file:
                 csv_reader = csv.reader(file, quoting=csv.QUOTE_NONE, escapechar='\\')
                 text_context = [(csv_row[3], csv_row[0]) for csv_row in csv_reader]
                 doc_tuples = nlp.pipe(text_context, as_tuples=True)
