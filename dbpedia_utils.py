@@ -1,5 +1,6 @@
 import ssl
 import time
+from typing import Tuple
 
 from SPARQLWrapper import SPARQLWrapper, JSON
 from titlecase import titlecase
@@ -12,7 +13,14 @@ sparql = SPARQLWrapper("http://dbpedia.org/sparql")
 sparql.setReturnFormat(JSON)
 
 
-def dbpedia_format(mention):
+def dbpedia_format(mention: str) -> Tuple[str, str, str, str]:
+    """Format the mention into a format that is allowed in the SPARQL query.
+
+    :param mention: Original mention.
+    :type mention: str
+    :return: 4 mention formats required by the query.
+    :rtype: Tuple[str, str, str, str]
+    """
     mention_0 = ' '.join(mention.strip().strip("'\"").split())
     mention_1 = mention_0.replace(' ', '_')
     mention_2 = titlecase(mention_0)
@@ -20,7 +28,18 @@ def dbpedia_format(mention):
     return mention_0, mention_1, mention_2, mention_3
 
 
-def build_query(mentions, group, extra=False, tmp=False):
+def build_query(mentions: Tuple[str, str, str, str], group: str, extra=False) -> str:
+    """Build a query given all the formatted mentions and the group, also can pick query with additional info.
+
+    :param mentions: Tuple of mentions in the required format.
+    :type mentions: Tuple[str, str, str, str]
+    :param group: Group to which the mention belongs.
+    :type group: str
+    :param extra: If True pick broader query.
+    :type extra: bool
+    :return: SPARQL query str.
+    :rtype: str
+    """
     mention_0, mention_1, mention_2, mention_3 = mentions
     if extra:
         return f"""
@@ -144,7 +163,16 @@ def build_query(mentions, group, extra=False, tmp=False):
         """
 
 
-def generate_candidates(mention, group):
+def generate_candidates(mention: str, group: str) -> object:
+    """Generate candidates by executing a SPARQL query on the dbpedia endpoint using the mention and group.
+
+    :param mention: Original mention.
+    :type mention: str
+    :param group: Group to which the mention belongs.
+    :type group: str
+    :return: Candidates.
+    :rtype: object
+    """
     mentions = dbpedia_format(mention)
     extra = mentions[0] != mentions[2]
     query = build_query(mentions, group, extra=extra)

@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
+# Install spaCy model.
 RUN python3 -m spacy download en_core_web_trf
 
 COPY . .
