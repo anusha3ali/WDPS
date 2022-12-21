@@ -20,8 +20,6 @@ n_gold = len(gold)
 
 # Load the predictions
 pred = {}
-import json
-gd = json.load(open("global_dict.json"))
 for line in open(pred_file):
     if type in line:
         if type == 'ENTITY':
