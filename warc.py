@@ -11,7 +11,10 @@ from io import TextIOWrapper
 from typing import Iterator, List, Tuple, Union
 
 import nltk
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, MarkupResemblesLocatorWarning
+import warnings
+
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning, module='bs4')
 
 
 def _find_html(payload: str) -> Union[Tuple[str, List[str]], Tuple[None, None]]:
