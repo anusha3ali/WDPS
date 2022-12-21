@@ -5,5 +5,6 @@ spacy==3.4.3
 gensim==4.2.0
 networkx==2.8.8
 requests==2.28.1
+spacy-transformers==1.1.8
 Levenshtein==0.20.8
 titlecase==2.4

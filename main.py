@@ -9,8 +9,8 @@ import spacy_transformers
 import logging
 
 from warc import process_warc_zip, save_pre_proc
-from relation_extraction import Reverb, Patty, ReverbNoNlp, Rebel
-from dbpedia_with_EL import generate_candidates, get_most_popular_pages, get_most_refered_page, link_entity
+from relation_extraction import ReverbNoNlp
+from dbpedia_with_EL import link_entity
 
 logger = logging.getLogger("spacy")
 logger.setLevel(logging.ERROR)
@@ -56,22 +56,19 @@ class Extraction:
     process_entity_dict = None
 
     def __init__(self, vocab):
-        # self.rev = ReverbNoNlp(vocab)
-        self.rebel = Rebel()
+        self.rev = ReverbNoNlp(vocab)
         self.process_entity_dict = {}
 
     def process_row(self, text_key):
         text, key = text_key
         linked_entity_dict = link_entity(text, self.process_entity_dict)
-        # relations = self.rev.extract_spacy_relations(text, linked_entity_dict)
-        relations = self.rebel.extract_spacy_relations(text, linked_entity_dict)
+        relations = self.rev.extract_spacy_relations(text, linked_entity_dict)
 
         res = []
         for mention, link in linked_entity_dict.items():
             res.append(Extraction.entity_to_str(key, mention, link))
         for wiki1, relation, wiki2 in relations:
             res.append(Extraction.relation_to_str(key, linked_entity_dict[wiki1], linked_entity_dict[wiki2], relation))
-        # print("row_processed")
         return res
 
     @staticmethod
@@ -97,9 +94,7 @@ def find_linked_relations(pre_proc_files, model_name, pool_size):
     vocab = nlp.vocab
 
     text_context = [(pre_proc_file[3], pre_proc_file[0]) for pre_proc_file in pre_proc_files]
-    # print("start with pipe")
     doc_tuples = nlp.pipe(text_context, as_tuples=True)
-    # print("finished pipe")
 
     if pool_size == 1:
         results = []
@@ -110,16 +105,6 @@ def find_linked_relations(pre_proc_files, model_name, pool_size):
         with mp.Pool(processes=pool_size) as pool:
             extraction = Extraction(vocab)
             results = pool.map(extraction.process_row, doc_tuples)
-
-    # print("start sort")
-    # import time
-    # s = time.time()
-    # # Use default sort. Should sort on warc key first as it uses default string sort.
-    # results.sort()
-    # e = time.time()
-    # print(f"sort took {e - s}s")
-
-    # print("start printing")
 
     for result in results:
         for entry in result:
@@ -167,9 +152,7 @@ if __name__ == "__main__":
 
     create_dirs(args.pre_proc_dir, args.relations_dir)
 
-    # pre_proc_files = _load_proc_files_from_csv("pre-proc/warcs-20221210-141217.csv")
     pre_proc_files = pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
-    # pre_proc_files = pre_proc_files[:50]
-    # pre_proc_files = [pre_proc_files[132]]  # warc 147
+    # pre_proc_files = pre_proc_files[:5]
 
     find_linked_relations(pre_proc_files, "en_core_web_trf", mp.cpu_count())
