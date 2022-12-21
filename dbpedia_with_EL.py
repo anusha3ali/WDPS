@@ -107,16 +107,17 @@ def get_most_similar_entity(mention, pages):
 
 
 def get_most_refered_page(mention, candidates):
-    if candidates is None or len(candidates["results"]["bindings"]) == 0:
+    if candidates is None or candidates["results"]["bindings"] is None or len(candidates["results"]["bindings"]) == 0:
         return None
     
+    candidates = candidates["results"]["bindings"]
     if len(candidates) == 1:
         entity_name = candidates[0]["name"]["value"] if "value" in candidates[0]["name"] else candidates[0]["name"]
         return candidates[0]["page"]["value"]  # TODO why is this a list?
     
     max_refered_count = 0
     popular_pages = []
-    for candidate in candidates["results"]["bindings"]:
+    for candidate in candidates:
         refered_count = int(candidate["count"]["value"])
         if refered_count >= max_refered_count:
             max_refered_count = refered_count
