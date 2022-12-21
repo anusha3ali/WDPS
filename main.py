@@ -62,7 +62,7 @@ class Extraction:
         for mention, link in linked_entity_dict.items():
             res.append(Extraction.entity_to_str(key, mention, link))
         for wiki1, relation, wiki2 in relations:
-            res.append(Extraction.relation_to_str(key, wiki1, wiki2, relation))
+            res.append(Extraction.relation_to_str(key, linked_entity_dict[wiki1], linked_entity_dict[wiki2], relation))
         return res
 
     @staticmethod
@@ -80,9 +80,7 @@ def find_linked_relations(pre_proc_files, model_name, pool_size):
     nlp = spacy.load(model_name, disable=[
         "textcat",
         "tok2vec",
-        "tagger",
         "parser",
-        "attribute_ruler",
         "lemmatizer"
     ])
     nlp.add_pipe("sentencizer")
@@ -156,7 +154,8 @@ if __name__ == "__main__":
 
     create_dirs(args.pre_proc_dir, args.relations_dir)
 
-    pre_proc_files = pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
+    pre_proc_files = _load_proc_files_from_csv("pre-proc/warcs-20221210-141217.csv")  # pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
     # pre_proc_files = pre_proc_files[900:1000]
+    # pre_proc_files = [pre_proc_files[132]]  # warc 147
 
-    find_linked_relations(pre_proc_files, "en_core_web_trf", mp.cpu_count())
+    find_linked_relations(pre_proc_files, "en_core_web_trf", 1)
