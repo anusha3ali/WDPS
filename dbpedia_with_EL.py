@@ -131,8 +131,7 @@ def get_most_refered_page(mention, candidates):
     return most_popular_pages[best][1]
 
 
-def link_entity(text):
-    global_mention_entity = {}
+def link_entity(text, global_mention_entity):
     ents = {(ent.text, ent.label_) for ent in text.ents}
     local_mention_entity = {}
     # print(total_documents)
