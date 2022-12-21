@@ -102,8 +102,13 @@ def find_linked_relations(pre_proc_files, model_name, pool_size):
             extraction = Extraction(vocab)
             results = pool.map(extraction.process_row, doc_tuples)
 
-    # Use default sort. Should sort on warc key first as it uses default string sort.
-    results.sort()
+    # print("start sort")
+    # import time
+    # s = time.time()
+    # # Use default sort. Should sort on warc key first as it uses default string sort.
+    # results.sort()
+    # e = time.time()
+    # print(f"sort took {e - s}s")
 
     for result in results:
         for entry in result:
@@ -111,10 +116,9 @@ def find_linked_relations(pre_proc_files, model_name, pool_size):
 
     with open("data/out", "w", encoding='UTF-8') as out_file:
         for result in results:
-            if len(result) == 0:
-                continue
-            out_file.write("\n".join(result))
-            out_file.write("\n")
+            for entry in result:
+                out_file.write(entry)
+                out_file.write("\n")
 
 
 def _load_proc_files_from_csv(file_path):
@@ -153,6 +157,6 @@ if __name__ == "__main__":
     create_dirs(args.pre_proc_dir, args.relations_dir)
 
     pre_proc_files = pre_proc_stage(args.pre_proc_dir, args.pre_proc_filename)
-    # pre_proc_files = pre_proc_files[100:200]
+    # pre_proc_files = pre_proc_files[900:1000]
 
     find_linked_relations(pre_proc_files, "en_core_web_trf", mp.cpu_count())
