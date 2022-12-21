@@ -9,7 +9,7 @@ import spacy_transformers
 import logging
 
 from warc import process_warc_zip, save_pre_proc
-from relation_extraction import Reverb, Patty, ReverbNoNlp
+from relation_extraction import Reverb, Patty, ReverbNoNlp, Rebel
 from dbpedia_with_EL import generate_candidates, get_most_popular_pages, get_most_refered_page, link_entity
 
 logger = logging.getLogger("spacy")
@@ -56,13 +56,15 @@ class Extraction:
     process_entity_dict = None
 
     def __init__(self, vocab):
-        self.rev = ReverbNoNlp(vocab)
+        # self.rev = ReverbNoNlp(vocab)
+        self.rebel = Rebel()
         self.process_entity_dict = {}
 
     def process_row(self, text_key):
         text, key = text_key
         linked_entity_dict = link_entity(text, self.process_entity_dict)
-        relations = self.rev.extract_spacy_relations(text, linked_entity_dict)
+        # relations = self.rev.extract_spacy_relations(text, linked_entity_dict)
+        relations = self.rebel.extract_spacy_relations(text, linked_entity_dict)
 
         res = []
         for mention, link in linked_entity_dict.items():

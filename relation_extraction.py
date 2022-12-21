@@ -1,9 +1,10 @@
 import spacy
 import spacy_transformers
+import spacy_component
 from spacy.matcher import Matcher
 from spacy.tokens import Span
-import networkx as nx
-from itertools import combinations
+# import networkx as nx
+# from itertools import combinations
 import csv
 import datetime
 
@@ -285,7 +286,31 @@ class ReverbNoNlp:
         return formatted_relations
 
 
+
+class Rebel():
+    def __init__():
+        nlp = spacy.load("en_core_web_sm", disable=["textcat", "tagger", "lemmatizer"])
+        nlp.add_pipe("rebel", after="senter", config={
+            'device': -1,
+            'model_name':'Babelscape/rebel-large'}
+        )
+
+    def extract_spacy_relations(self, text, valid_entities):
+        formatted_relations = []
+        doc = self.nlp(text)
+        for relation in doc._.rel.values():
+            e1, r, e2 = (relation['head_span'].text, relation['relation'], relation['tail_span'].text)
+            if e1 in valid_entities and e2 in valid_entities:
+                formatted_relations.append((e1, r, e2))
+        return formatted_relations
+            
+
 if __name__ == "__main__":
-    reverb = Reverb()
-    rows = reverb.extract_relations_from_zip(f"{pre_proc_directory}/warcs-20221210-141217.csv")
-    reverb.save_file(f"{res_directory}/{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}", rows)
+    text = f"""Alphabet's Google might soon layoff nearly 6 per cent or 10,000 of its ‘poor performing' employees starting early 2023.
+    According to a report by ‘The Information’ Google’s managers have been asked to analyse and rank the 'poor performing' employees. 
+    Alphabet currently employs around 1,87,000 employees. 10.0 of them are laid off.
+    Google will use a ranking system and the lowest-ranked employees are expected to be fired from the company. 
+    Google had earlier announced that it will be slowing down the hiring process in the fourth quarter of the year. 
+    With this, Google will join other big tech companies, including Meta, Twitter, Amazon, etc, that have announced layoffs in the recent weeks."""
+
+    # rebel_relation_extraction(text)
